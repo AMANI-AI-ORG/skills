@@ -3,10 +3,10 @@
 // The nested source tree (mobile/…, backend/…, web/…) is flattened into
 // <target>/<skill-name>/SKILL.md, which is what Claude Code / Cursor discover.
 //
-//   npx -y github:AmaniTechnologiesLtd/skills            -> ./.claude/skills   (current project)
-//   npx -y github:AmaniTechnologiesLtd/skills --global   -> ~/.claude/skills   (all projects)
-//   npx -y github:AmaniTechnologiesLtd/skills --dir DIR  -> custom directory
-//   npx -y github:AmaniTechnologiesLtd/skills --list     -> list skills, install nothing
+//   npx -y github:AMANI-AI-ORG/skills            -> ./.claude/skills   (current project)
+//   npx -y github:AMANI-AI-ORG/skills --global   -> ~/.claude/skills   (all projects)
+//   npx -y github:AMANI-AI-ORG/skills --dir DIR  -> custom directory
+//   npx -y github:AMANI-AI-ORG/skills --list     -> list skills, install nothing
 //
 // Pure Node, zero dependencies.
 
@@ -16,8 +16,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const PKG_ROOT = path.resolve(__dirname, ".."); // package root (holds mobile/ backend/ web/)
-const SOURCE_DIRS = ["mobile", "backend", "web"];
+const PKG_ROOT = path.resolve(__dirname, ".."); // package root (holds skills/)
+const SOURCE_DIRS = ["skills"];
 
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
@@ -30,10 +30,10 @@ if (has("--help") || has("-h")) {
   console.log(`Amani Agent Skills — installer
 
 Usage:
-  npx -y github:AmaniTechnologiesLtd/skills            Install into ./.claude/skills (current project)
-  npx -y github:AmaniTechnologiesLtd/skills --global   Install into ~/.claude/skills (all projects)
-  npx -y github:AmaniTechnologiesLtd/skills --dir DIR  Install into a custom skills directory
-  npx -y github:AmaniTechnologiesLtd/skills --list     List the available skills without installing`);
+  npx -y github:AMANI-AI-ORG/skills            Install into ./.claude/skills (current project)
+  npx -y github:AMANI-AI-ORG/skills --global   Install into ~/.claude/skills (all projects)
+  npx -y github:AMANI-AI-ORG/skills --dir DIR  Install into a custom skills directory
+  npx -y github:AMANI-AI-ORG/skills --list     List the available skills without installing`);
   process.exit(0);
 }
 

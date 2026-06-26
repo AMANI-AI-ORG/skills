@@ -1,0 +1,9 @@
+{
+  "name": "amani-skills",
+  "version": "0.1.0",
+  "description": "Agent Skills to integrate the Amani SDKs (KYC, Video, BioMatch, Voice, Web, REST API), grounded in the live Amani documentation.",
+  "author": {
+    "name": "Amani"
+  },
+  "homepage": "https://documentation.amani.ai"
+}

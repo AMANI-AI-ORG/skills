@@ -7,11 +7,10 @@
     "skills": "bin/install.mjs"
   },
   "files": [
-    "mobile",
-    "backend",
-    "web",
+    "skills",
     "bin",
-    "README.md"
+    "README.md",
+    ".claude-plugin"
   ],
   "keywords": [
     "amani",
@@ -27,7 +26,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AmaniTechnologiesLtd/skills.git"
+    "url": "git+https://github.com/AMANI-AI-ORG/skills.git"
   },
   "homepage": "https://documentation.amani.ai",
   "engines": {

@@ -11,15 +11,16 @@ always up to date and never drifts from the published docs.
 
 ## Taxonomy
 
+All skills live flat under `skills/` (vendor-prefixed names carry the grouping):
+
 ```
 skills/
-  mobile/
-    kyc/    amani-kyc (router: Core vs UI) + amani-kyc-{core,ui}-{android,ios,flutter,react-native}
-    video/  amani-video (router) + amani-video-{android,ios,flutter}
-    biomatch/ amani-biomatch (router) + amani-biomatch-{android,ios}
-    voice/  amani-voice (router) + amani-voice-{android,ios}
-  backend/  amani-api
-  web/      amani-web-sdk
+  mobile · KYC:      amani-kyc (router: Core vs UI) + amani-kyc-{core,ui}-{android,ios,flutter,react-native}
+  mobile · Video:    amani-video (router) + amani-video-{android,ios,flutter}
+  mobile · BioMatch: amani-biomatch (router) + amani-biomatch-{android,ios}
+  mobile · Voice:    amani-voice (router) + amani-voice-{android,ios}
+  backend:           amani-api
+  web:               amani-web-sdk
 ```
 
 ## Install
@@ -27,22 +28,30 @@ skills/
 **Option 1 — npx (no clone):**
 
 ```bash
-npx -y github:AmaniTechnologiesLtd/skills            # -> ./.claude/skills  (this project)
-npx -y github:AmaniTechnologiesLtd/skills --global   # -> ~/.claude/skills  (all projects)
-npx -y github:AmaniTechnologiesLtd/skills --list     # list skills, install nothing
+npx -y github:AMANI-AI-ORG/skills            # -> ./.claude/skills  (this project)
+npx -y github:AMANI-AI-ORG/skills --global   # -> ~/.claude/skills  (all projects)
+npx -y github:AMANI-AI-ORG/skills --list     # list skills, install nothing
 ```
 
 **Option 2 — git clone:**
 
 ```bash
-git clone https://github.com/AmaniTechnologiesLtd/skills.git
-node skills/bin/install.mjs --global    # flatten + install into ~/.claude/skills
-# (or copy the skill folders manually into your agent's skills directory)
+git clone https://github.com/AMANI-AI-ORG/skills.git
+node skills/bin/install.mjs --global    # install into ~/.claude/skills
+# (or copy the skills/ folders manually into your agent's skills directory)
 ```
 
-Both flatten the tree into `<skills-dir>/<skill-name>/SKILL.md`, which Claude
-Code and Cursor discover automatically. Reload your agent afterwards. (If the
-package is published to npm, `npx -y @amani/skills` works too.)
+**Option 3 — Claude Code plugin (auto-updates):**
+
+```
+/plugin marketplace add AMANI-AI-ORG/skills
+/plugin install amani-skills@amani
+```
+
+Options 1–2 copy the skills into `<skills-dir>/<skill-name>/SKILL.md`, which
+Claude Code and Cursor discover automatically (reload your agent afterwards).
+Option 3 installs them as a managed plugin. (If published to npm,
+`npx -y @amani/skills` also works.)
 
 ## How the disambiguation works
 

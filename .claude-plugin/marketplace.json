@@ -1,0 +1,13 @@
+{
+  "name": "amani",
+  "owner": {
+    "name": "Amani"
+  },
+  "plugins": [
+    {
+      "name": "amani-skills",
+      "source": "./",
+      "description": "Amani SDK integration skills (KYC, Video, BioMatch, Voice, Web, REST API)"
+    }
+  ]
+}
