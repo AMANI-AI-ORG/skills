@@ -38,38 +38,22 @@ npx -y github:AMANI-AI-ORG/skills --list     # list skills, install nothing
 ```bash
 git clone https://github.com/AMANI-AI-ORG/skills.git
 node skills/bin/install.mjs --global    # install into ~/.claude/skills
-# (or copy the skills/ folders manually into your agent's skills directory)
 ```
 
-**Option 3 — Claude Code plugin (auto-updates):**
-
-```
-/plugin marketplace add AMANI-AI-ORG/skills
-/plugin install amani-skills@amani
-```
-
-Options 1–2 copy the skills into `<skills-dir>/<skill-name>/SKILL.md`, which
-Claude Code and Cursor discover automatically (reload your agent afterwards).
-Option 3 installs them as a managed plugin. (If published to npm,
-`npx -y @amani/skills` also works.)
+Reload your agent after installing.
 
 ## How the disambiguation works
 
-Ask your agent, e.g. *"Integrate the Amani KYC SDK."* The `amani-kyc` router
-skill triggers and the agent will:
-1. Ask whether you want the **Core SDK** (headless, build your own UI) or the
-   **UI SDK** (drop-in prebuilt screens), explaining the difference.
+Ask your agent, e.g. *"Integrate the Amani KYC SDK."* The `amani-kyc` router skill triggers and the agent will:
+1. Ask whether you want the **Core SDK** (headless, build your own UI) or the **UI SDK** (drop-in prebuilt screens), explaining the difference.
 2. Confirm the platform (Android / iOS / Flutter / React Native).
-3. Fetch the matching live documentation and apply it — using only documented
-   versions/commands and citing every source URL.
+3. Fetch the matching live documentation and apply it — using only documented versions/commands and citing every source URL.
 
-Video / BioMatch / Voice routers ask only for the platform. `amani-api`
-(backend) and `amani-web-sdk` are single skills.
+Video / BioMatch / Voice routers ask only for the platform. `amani-api` (backend) and `amani-web-sdk` are single skills.
 
 ## Example prompts
 
-Once installed, ask your agent in plain language — name the **product** and the
-**platform**, and let the skill fetch the live docs and pin the right versions.
+Name the **product** and the **platform**, and let the skill fetch the live docs and pin the right versions.
 
 **✅ Good — clear intent, let the skill do the grounded work:**
 - "Integrate the Amani KYC SDK into this Android app."  → router asks Core vs UI, then confirms the platform.
@@ -87,23 +71,6 @@ Once installed, ask your agent in plain language — name the **product** and th
 - "Grab the SDK from GitHub releases or a mirror."  — use only the official sources in the docs.
 - "Help me with my app."  — too vague to trigger; name the SDK and the platform.
 
-> Tip: you don't need to supply versions, repos or commands — the skill fetches
-> them live. Just say which SDK and which platform.
+---
 
-## Rules & safety
-
-Every skill embeds a shared checklist so integrations stay grounded, current and
-secure: **fetch live docs first**, **resolve & pin the latest version from the
-SDK's ReleaseNote page on the docs site** (mobile only — never GitHub/jitpack,
-never a floating `Tag`/`latest`), **never hardcode secrets**, **official
-sources only**, **least-privilege permissions**, **keep SSL pinning / request
-signing on**, **don't log PII/KYC data**, and **cite every source URL**.
-
-## Regenerate
-
-The skills are generated from the docs taxonomy. After the documentation
-changes, refresh the live-URL maps with:
-
-```bash
-node skills/generate.mjs
-```
+**Contributing / internals:** see [CONTRIBUTING.md](CONTRIBUTING.md) — architecture, how skills are generated from `templates/`, how to add a platform/SDK or a rule, and the release flow.

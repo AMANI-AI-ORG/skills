@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Generates the skills/ tree: dynamic Agent Skills (SKILL.md) that link to
-// the LIVE Amani documentation (https://documentation.amani.ai). The skills hold
-// no static doc content — only live URLs + instructions — so they never go stale.
+// Generates the skills/ tree: dynamic Agent Skills (SKILL.md) that link to the
+// LIVE Amani documentation (https://documentation.amani.ai). Skills hold no
+// static doc content — only live URLs + instructions — so they never go stale.
+//
+// Content is assembled from templates/ (see CONTRIBUTING.md for the architecture).
 // Re-run after the docs change:  node skills/generate.mjs
 //
 // Pure Node, zero dependencies.
@@ -13,29 +15,9 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const DOCS_DIR = path.join(REPO_ROOT, "documents");
-const OUT_DIR = __dirname; // skills/
+const OUT_DIR = __dirname; // skills repo root
+const TEMPLATES = path.join(__dirname, "templates");
 const SITE = "https://documentation.amani.ai";
-
-// Claude Code plugin + marketplace manifests (emitted into .claude-plugin/).
-const PLUGIN_MANIFEST = {
-  name: "amani-skills",
-  version: "0.1.0",
-  description:
-    "Agent Skills to integrate the Amani SDKs (KYC, Video, BioMatch, Voice, Web, REST API), grounded in the live Amani documentation.",
-  author: { name: "Amani" },
-  homepage: "https://documentation.amani.ai",
-};
-const MARKETPLACE_MANIFEST = {
-  name: "amani",
-  owner: { name: "Amani" },
-  plugins: [
-    {
-      name: "amani-skills",
-      source: "./",
-      description: "Amani SDK integration skills (KYC, Video, BioMatch, Voice, Web, REST API)",
-    },
-  ],
-};
 
 const PLATFORM_LABEL = { android: "Android", ios: "iOS", flutter: "Flutter", "react-native": "React Native" };
 
@@ -128,7 +110,7 @@ function stripQuotes(s) {
   return s.trim().replace(/^['"]|['"]$/g, "");
 }
 
-// Lightweight YAML frontmatter read (no deps): returns { slug, title }.
+// Lightweight YAML frontmatter read (no deps): returns { slug, id, title }.
 function readFrontmatter(absPath) {
   const raw = fs.readFileSync(absPath, "utf8").replace(/^﻿/, ""); // strip leading BOM
   const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
@@ -141,10 +123,10 @@ function readFrontmatter(absPath) {
   return { slug: fm.slug, id: fm.id, title: fm.title };
 }
 
-// Build a doc's live URL, mirroring Docusaurus routing INCLUDING frontmatter slug.
+// Build a doc's live URL, mirroring Docusaurus routing INCLUDING frontmatter slug/id.
 // - slug starting with "/"  -> relative to the plugin route root
-// - slug without leading "/" -> relative to the doc's own directory
-// - no slug                  -> derived from the file path (index/README -> folder root)
+// - slug/id without leading "/" -> relative to the doc's own directory
+// - none -> derived from the file path (index/README -> folder root)
 function docUrl(route, relNoExt, slug, id) {
   const segs = relNoExt.split("/");
   const base = segs[segs.length - 1].toLowerCase();
@@ -173,11 +155,19 @@ function listPages(src, route, pageToken) {
       path.relative(dir, path.join(e.parentPath ?? e.path, e.name)).split(path.sep).join("/"),
     );
   if (pageToken) rels = rels.filter((r) => r.toLowerCase().includes(pageToken.toLowerCase()));
+  const norm = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
   const pages = rels.map((rel) => {
     const noExt = rel.replace(/\.(md|mdx)$/i, "");
+    const segs = noExt.split("/");
     const { slug, id, title } = readFrontmatter(path.join(dir, rel));
+    const base = title || segs[segs.length - 1].replace(/[-_]/g, " ");
+    // Prefix nested-folder pages with their folder so labels aren't ambiguous
+    // (e.g. selfie/AutoSelfie titled "Auto" -> "Selfie / Auto"); skip when redundant.
+    const folderRaw = segs.length > 1 ? segs[segs.length - 2] : "";
+    const folder = folderRaw ? folderRaw.charAt(0).toUpperCase() + folderRaw.slice(1).replace(/[-_]/g, " ") : "";
+    const label = folder && !norm(base).includes(norm(folderRaw)) ? `${folder} / ${base}` : base;
     return {
-      title: title || noExt.split("/").pop().replace(/[-_]/g, " "),
+      title: label,
       url: docUrl(route, noExt, slug, id),
       rank: pageRank(noExt),
     };
@@ -186,65 +176,60 @@ function listPages(src, route, pageToken) {
   return pages;
 }
 
-function frontmatter(name, description, meta) {
-  const m = Object.entries(meta)
-    .map(([k, v]) => `    ${k}: ${typeof v === "string" ? JSON.stringify(v) : v}`)
-    .join("\n");
-  return `---\nname: ${name}\ndescription: ${JSON.stringify(description)}\nmetadata:\n  amani:\n${m}\n---\n`;
+// --- templates -------------------------------------------------------------
+function readTemplate(rel) {
+  return fs.readFileSync(path.join(TEMPLATES, rel), "utf8");
+}
+function fillTemplate(tmpl, vars) {
+  return tmpl.replace(/\{\{(\w+)\}\}/g, (_, k) => (k in vars ? vars[k] : `{{${k}}}`));
+}
+function metaBlock(meta) {
+  return Object.entries(meta).map(([k, v]) => `    ${k}: ${JSON.stringify(v)}`).join("\n");
+}
+// Shared rules + OPTIONAL scoped additions. Drop a file in templates/rules/ named
+//   platform-<mobile|web|backend|android|ios|flutter|react-native>.md   or
+//   sdk-<kyc|video|biomatch|voice|web|api>.md
+// to append rules only for that scope (category, OS platform, or SDK). See CONTRIBUTING.md.
+function assembleRules(platform, sdk, target) {
+  const parts = [readTemplate("rules/common.md").trimEnd()];
+  const files = [`rules/platform-${platform}.md`];
+  if (target) files.push(`rules/platform-${target}.md`);
+  files.push(`rules/sdk-${sdk}.md`);
+  for (const f of files) {
+    const p = path.join(TEMPLATES, f);
+    if (fs.existsSync(p)) parts.push(fs.readFileSync(p, "utf8").trim());
+  }
+  return parts.join("\n\n");
 }
 
-function writeSkill(relDir, name, content) {
+function writeSkill(name, content) {
   const dir = path.join(OUT_DIR, "skills", name); // flat layout: Claude plugin + simple install
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(path.join(dir, "SKILL.md"), content);
   count++;
 }
 
-const RULES = [
-  "## How to implement",
-  "1. Fetch the live pages above first (start with Requirements / Preparation / Getting Started).",
-  "2. Use ONLY the dependency coordinates, repository URLs, commands, permissions, endpoints and initialization code that appear in those docs — never recall them from memory.",
-  "3. **Pin the latest version from the docs release notes.** Get the current version ONLY from this SDK's **ReleaseNote** page (listed above, e.g. `.../<sdk>/ReleaseNote`) — never GitHub Releases, jitpack or any external source. Entries are newest-first: the **latest version is the first/topmost entry directly under the \"Release Notes\" heading** (that entry's heading IS the version, e.g. `v1.41.2`). Replace any placeholder (`Tag`, `LATEST_RELEASE`, `+`, `latest`) with that version and pin it exactly. The page is server-rendered — if your fetch returns an empty / JavaScript-only shell, retry or use a browser-capable fetch; never guess or fall back to a remembered version. If this SDK has no ReleaseNote page, use the version in the setup pages and ask the user if it is a placeholder.",
-  "4. Treat secret placeholders (`YOUR_API_KEY`, `sharedSecret`, tokens) as placeholders — wire them via secure config and ask the user; never hardcode a real value.",
-  "5. Cite the source URL next to each change. If a required detail is missing from the docs, say so and stop.",
-  "",
-  "## Safety & security (apply to every integration)",
-  "- **Official sources only.** Use exactly the repositories/registries in the docs; never substitute mirrors or unverified packages.",
-  "- **Pin exact versions** (no floating `+`/`latest`) for reproducible, supply-chain-safe builds.",
-  "- **Never hardcode or commit secrets** — API keys, tokens, `sharedSecret`. Use environment variables / secure storage / platform keystores and keep them out of version control.",
-  "- **Least privilege.** Add only the permissions the docs require; don't request extras.",
-  "- **Keep security features on.** Honor the docs' SSL pinning / request signing / `sharedSecret`; never disable TLS or certificate validation.",
-  "- **Protect user data.** Don't log or persist PII / KYC data (ID images, NFC chip data, selfies) beyond what the docs specify.",
-  "- **Minimal, reversible changes.** Edit only what's needed, preserve existing config, and confirm before any destructive change to the user's project.",
-  "",
-];
-
 function leafContent({ name, heading, blurb, sdk, variant, target, route, pages, platform, platformLabel }) {
   const sectionUrl = `${SITE}/${route}`;
   const plat = platform ?? "mobile";
   const tLabel = target ? PLATFORM_LABEL[target] : platformLabel ?? "";
-  const titleSuffix = tLabel ? ` — ${tLabel}` : "";
+  const titleSuffix = target ? ` — ${tLabel}` : "";
   const description = target
     ? `Integrate the Amani ${heading} on ${tLabel} using the live Amani documentation. Use when adding or implementing the Amani ${heading} on ${tLabel}.`
     : `Integrate the Amani ${heading} using the live Amani documentation. Use when adding or implementing the Amani ${heading} (${platformLabel}).`;
   const meta = { platform: plat, sdk };
   if (variant) meta.variant = variant;
   if (target) meta.target = target;
-
-  const pageLines = pages.length ? pages.map((p) => `- **${p.title}** — ${p.url}`) : [`- ${sectionUrl}`];
-  return [
-    frontmatter(name, description, meta),
-    `# Amani ${heading}${titleSuffix}`,
-    "",
-    blurb,
-    "",
-    "## Live documentation (fetch before implementing)",
-    `These are the authoritative, always-current docs. Fetch the relevant pages below, follow them exactly, and use ONLY the values they contain.`,
-    "",
-    ...pageLines,
-    "",
-    ...RULES,
-  ].join("\n");
+  const liveDocs = (pages.length ? pages.map((p) => `- **${p.title}** — ${p.url}`) : [`- ${sectionUrl}`]).join("\n");
+  return fillTemplate(readTemplate("leaf.md"), {
+    NAME: name,
+    DESCRIPTION: JSON.stringify(description),
+    METADATA: metaBlock(meta),
+    HEADING: `Amani ${heading}${titleSuffix}`,
+    BLURB: blurb,
+    LIVE_DOCS: liveDocs,
+    RULES: assembleRules(plat, sdk, target),
+  });
 }
 
 function kycRouterContent(combos) {
@@ -255,222 +240,68 @@ function kycRouterContent(combos) {
     .sort((a, b) => a.vlabel.localeCompare(b.vlabel) || a.target.localeCompare(b.target))
     .map((c) => `| ${c.vlabel} | ${PLATFORM_LABEL[c.target]} | ${c.entry} | \`${c.name}\` |`)
     .join("\n");
-  return [
-    frontmatter("amani-kyc", description, { platform: "mobile", sdk: "kyc", role: "router" }),
-    "# Amani KYC SDK — choose the right integration",
-    "",
-    "Amani KYC ships in **two variants**. Before writing any code you MUST ask the user which one, explain the difference, then confirm the platform.",
-    "",
-    "## Step 1 — Ask the user: Core SDK or UI SDK?",
-    "Present BOTH options with this explanation, then let the user choose (do not assume):",
-    "- **Core SDK** — *headless*. You build your own screens; the SDK provides the KYC engine (ID capture, NFC, selfie, liveness) via APIs. Choose for full UI control / custom design.",
-    "- **UI SDK** — *drop-in*. Prebuilt, ready-made KYC screens & flow (an interface layer over Core). Choose for the fastest integration with minimal UI work.",
-    "",
-    "## Step 2 — Confirm the platform",
-    "Available platforms: Android, iOS, Flutter, React Native.",
-    "",
-    "## Step 3 — Use the live docs for the chosen combination",
-    "| Variant | Platform | Start here (live docs) | Dedicated skill |",
-    "|---|---|---|---|",
-    rows,
-    "",
-    "Then follow the matching skill above. Always: use only official documented sources, **resolve & pin the latest version from the SDK's ReleaseNote page on documentation.amani.ai** (never GitHub Releases / jitpack / any external source, never a floating `Tag`/`latest`), never hardcode secrets, keep the docs' security features (SSL pinning / request signing / `sharedSecret`) enabled, request least-privilege permissions, and cite every source URL.",
-    "",
-  ].join("\n");
+  return fillTemplate(readTemplate("router-kyc.md"), { DESCRIPTION: JSON.stringify(description), ROWS: rows });
 }
 
 function platformRouterContent(sdkKey, sdef, combos) {
   const description = `Implement the Amani ${sdef.label} on mobile. Use when the user asks to add or implement the Amani ${sdef.label} but has not chosen a platform — this skill asks first, then routes.`;
-  const rows = combos
-    .map((c) => `| ${PLATFORM_LABEL[c.target]} | ${c.entry} | \`${c.name}\` |`)
-    .join("\n");
-  return [
-    frontmatter(`amani-${sdkKey}`, description, { platform: "mobile", sdk: sdkKey, role: "router" }),
-    `# Amani ${sdef.label} — choose the platform`,
-    "",
-    sdef.blurb,
-    "",
-    "## Step 1 — Confirm the platform",
-    "Ask the user which platform, then use the live docs below.",
-    "",
-    "| Platform | Start here (live docs) | Dedicated skill |",
-    "|---|---|---|",
-    rows,
-    "",
-    "Then follow the matching skill above. Always: use only official documented sources, **resolve & pin the latest version from the SDK's ReleaseNote page on documentation.amani.ai** (never GitHub Releases / jitpack / any external source, never a floating `Tag`/`latest`), never hardcode secrets, keep the docs' security features enabled, request least-privilege permissions, and cite every source URL.",
-    "",
-  ].join("\n");
+  const rows = combos.map((c) => `| ${PLATFORM_LABEL[c.target]} | ${c.entry} | \`${c.name}\` |`).join("\n");
+  return fillTemplate(readTemplate("router-platform.md"), {
+    SDK: sdkKey,
+    SDK_LABEL: sdef.label,
+    DESCRIPTION: JSON.stringify(description),
+    BLURB: sdef.blurb,
+    ROWS: rows,
+  });
 }
 
 // --- generate --------------------------------------------------------------
 
 // KYC (Core + UI) — leaves + Core/UI router
 {
-  const dir = "mobile/kyc";
   const combos = [];
   for (const [variant, vdef] of Object.entries(MOBILE.kyc.variants)) {
     for (const [target, pdef] of Object.entries(vdef.platforms)) {
       const pages = listPages(pdef.src, pdef.route);
       const name = `amani-kyc-${variant}-${target}`;
-      writeSkill(dir, name, leafContent({
+      writeSkill(name, leafContent({
         name, heading: `KYC ${vdef.label}`, blurb: vdef.blurb,
         sdk: "kyc", variant, target, route: pdef.route, pages,
       }));
       combos.push({ vlabel: vdef.label, target, entry: pages[0]?.url ?? `${SITE}/${pdef.route}`, name });
     }
   }
-  writeSkill(dir, "amani-kyc", kycRouterContent(combos));
+  writeSkill("amani-kyc", kycRouterContent(combos));
 }
 
 // Video / BioMatch / Voice — leaves + platform router
 for (const sdkKey of ["video", "biomatch", "voice"]) {
   const sdef = MOBILE[sdkKey];
-  const dir = `mobile/${sdkKey}`;
   const combos = [];
   for (const [target, pdef] of Object.entries(sdef.platforms)) {
     const pages = listPages(pdef.src, pdef.route, sdef.pageToken?.[target]);
     const name = `amani-${sdkKey}-${target}`;
-    writeSkill(dir, name, leafContent({
+    writeSkill(name, leafContent({
       name, heading: sdef.label, blurb: sdef.blurb,
       sdk: sdkKey, variant: null, target, route: pdef.route, pages,
     }));
     combos.push({ target, entry: pages[0]?.url ?? `${SITE}/${pdef.route}`, name });
   }
-  writeSkill(dir, `amani-${sdkKey}`, platformRouterContent(sdkKey, sdef, combos));
+  writeSkill(`amani-${sdkKey}`, platformRouterContent(sdkKey, sdef, combos));
 }
 
 // Backend (REST API)
-writeSkill("backend", "amani-api", leafContent({
+writeSkill("amani-api", leafContent({
   name: "amani-api", heading: BACKEND.label, blurb: BACKEND.blurb,
   sdk: "api", variant: null, target: null, route: BACKEND.route,
   pages: listPages(BACKEND.src, BACKEND.route), platform: "backend", platformLabel: "Backend / server-side",
 }));
 
 // Web SDK
-writeSkill("web", "amani-web-sdk", leafContent({
+writeSkill("amani-web-sdk", leafContent({
   name: "amani-web-sdk", heading: WEB.label, blurb: WEB.blurb,
   sdk: "web", variant: null, target: null, route: WEB.route,
   pages: listPages(WEB.src, WEB.route), platform: "web", platformLabel: "Web / browser",
 }));
 
-// README
-fs.writeFileSync(path.join(OUT_DIR, "README.md"), readmeContent());
-
-fs.mkdirSync(path.join(OUT_DIR, ".claude-plugin"), { recursive: true });
-fs.writeFileSync(path.join(OUT_DIR, ".claude-plugin", "plugin.json"), JSON.stringify(PLUGIN_MANIFEST, null, 2) + "\n");
-fs.writeFileSync(path.join(OUT_DIR, ".claude-plugin", "marketplace.json"), JSON.stringify(MARKETPLACE_MANIFEST, null, 2) + "\n");
-
-console.log(`Generated ${count} skills under skills/ + .claude-plugin manifests + README`);
-
-function readmeContent() {
-  return `# Amani Agent Skills
-
-Dynamic [Agent Skills](https://modelcontextprotocol.io) that teach AI agents
-(Claude Code, Cursor, and any Agent-Skills-compatible agent) how to integrate
-the **Amani SDKs** — grounded in the **live, public documentation** at
-<${SITE}>.
-
-These skills contain **no static copies** of the docs — only **live links** and
-instructions. The agent fetches the current pages at runtime, so the guidance is
-always up to date and never drifts from the published docs.
-
-## Taxonomy
-
-All skills live flat under \`skills/\` (vendor-prefixed names carry the grouping):
-
-\`\`\`
-skills/
-  mobile · KYC:      amani-kyc (router: Core vs UI) + amani-kyc-{core,ui}-{android,ios,flutter,react-native}
-  mobile · Video:    amani-video (router) + amani-video-{android,ios,flutter}
-  mobile · BioMatch: amani-biomatch (router) + amani-biomatch-{android,ios}
-  mobile · Voice:    amani-voice (router) + amani-voice-{android,ios}
-  backend:           amani-api
-  web:               amani-web-sdk
-\`\`\`
-
-## Install
-
-**Option 1 — npx (no clone):**
-
-\`\`\`bash
-npx -y github:AMANI-AI-ORG/skills            # -> ./.claude/skills  (this project)
-npx -y github:AMANI-AI-ORG/skills --global   # -> ~/.claude/skills  (all projects)
-npx -y github:AMANI-AI-ORG/skills --list     # list skills, install nothing
-\`\`\`
-
-**Option 2 — git clone:**
-
-\`\`\`bash
-git clone https://github.com/AMANI-AI-ORG/skills.git
-node skills/bin/install.mjs --global    # install into ~/.claude/skills
-# (or copy the skills/ folders manually into your agent's skills directory)
-\`\`\`
-
-**Option 3 — Claude Code plugin (auto-updates):**
-
-\`\`\`
-/plugin marketplace add AMANI-AI-ORG/skills
-/plugin install amani-skills@amani
-\`\`\`
-
-Options 1–2 copy the skills into \`<skills-dir>/<skill-name>/SKILL.md\`, which
-Claude Code and Cursor discover automatically (reload your agent afterwards).
-Option 3 installs them as a managed plugin. (If published to npm,
-\`npx -y @amani/skills\` also works.)
-
-## How the disambiguation works
-
-Ask your agent, e.g. *"Integrate the Amani KYC SDK."* The \`amani-kyc\` router
-skill triggers and the agent will:
-1. Ask whether you want the **Core SDK** (headless, build your own UI) or the
-   **UI SDK** (drop-in prebuilt screens), explaining the difference.
-2. Confirm the platform (Android / iOS / Flutter / React Native).
-3. Fetch the matching live documentation and apply it — using only documented
-   versions/commands and citing every source URL.
-
-Video / BioMatch / Voice routers ask only for the platform. \`amani-api\`
-(backend) and \`amani-web-sdk\` are single skills.
-
-## Example prompts
-
-Once installed, ask your agent in plain language — name the **product** and the
-**platform**, and let the skill fetch the live docs and pin the right versions.
-
-**✅ Good — clear intent, let the skill do the grounded work:**
-- "Integrate the Amani KYC SDK into this Android app."  → router asks Core vs UI, then confirms the platform.
-- "Add the Amani KYC **Core** SDK to my iOS project."
-- "Set up the Amani Video Call SDK on Flutter."
-- "Integrate the Amani Web SDK into our React web app."
-- "Use the Amani REST API from our backend to create a verification profile."
-- "What's the latest documented version of the Amani Android UI SDK?"  → reads the ReleaseNote page.
-
-**❌ Avoid — these fight the grounding and lead to wrong results:**
-- "Add Amani KYC and set \`implementation 'ai.amani.android:AmaniAi:3.0.4'\`."  — don't hardcode a version from memory; the skill pins the latest from the docs.
-- "Just install it from what you already know, no need to check the docs."  — the skill's whole value is reading the current official docs.
-- "Integrate Amani KYC — don't ask, just pick Core or UI for me."  — Core vs UI is a real product choice; let it ask so you get the right SDK.
-- "If the version shows a placeholder like \`Tag\`, just guess the newest one."  — it must take the real version from the ReleaseNote page (or ask you).
-- "Grab the SDK from GitHub releases or a mirror."  — use only the official sources in the docs.
-- "Help me with my app."  — too vague to trigger; name the SDK and the platform.
-
-> Tip: you don't need to supply versions, repos or commands — the skill fetches
-> them live. Just say which SDK and which platform.
-
-## Rules & safety
-
-Every skill embeds a shared checklist so integrations stay grounded, current and
-secure: **fetch live docs first**, **resolve & pin the latest version from the
-SDK's ReleaseNote page on the docs site** (mobile only — never GitHub/jitpack,
-never a floating \`Tag\`/\`latest\`), **never hardcode secrets**, **official
-sources only**, **least-privilege permissions**, **keep SSL pinning / request
-signing on**, **don't log PII/KYC data**, and **cite every source URL**.
-
-## Regenerate
-
-The skills are generated from the docs taxonomy. After the documentation
-changes, refresh the live-URL maps with:
-
-\`\`\`bash
-node skills/generate.mjs
-\`\`\`
-`;
-}
+console.log(`Generated ${count} skills under skills/`);
