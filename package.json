@@ -1,0 +1,36 @@
+{
+  "name": "@amani/skills",
+  "version": "0.1.0",
+  "description": "Dynamic Agent Skills for integrating Amani SDKs (KYC, Video, BioMatch, Voice, Web, REST API), linked to the live Amani documentation.",
+  "type": "module",
+  "bin": {
+    "skills": "bin/install.mjs"
+  },
+  "files": [
+    "mobile",
+    "backend",
+    "web",
+    "bin",
+    "README.md"
+  ],
+  "keywords": [
+    "amani",
+    "kyc",
+    "agent-skills",
+    "claude",
+    "cursor",
+    "identity-verification"
+  ],
+  "license": "UNLICENSED",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmaniTechnologiesLtd/skills.git"
+  },
+  "homepage": "https://documentation.amani.ai",
+  "engines": {
+    "node": ">=18"
+  }
+}
