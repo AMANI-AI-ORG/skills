@@ -40,6 +40,20 @@ git clone https://github.com/AMANI-AI-ORG/skills.git
 node skills/bin/install.mjs --global    # install into ~/.claude/skills
 ```
 
+**Option 3 — local (no push — for testing your own checkout):**
+
+Already have the repo downloaded (local development / testing)? Install straight from the
+folder — no clone or push needed:
+
+```bash
+# from inside the repo:
+npx -y . --global              # -> ~/.claude/skills
+node bin/install.mjs --global  # same, skips npm packing (fastest to re-run)
+
+# or from anywhere, point npx at the folder:
+npx -y /path/to/skills --global
+```
+
 Reload your agent after installing.
 
 ## How the disambiguation works
