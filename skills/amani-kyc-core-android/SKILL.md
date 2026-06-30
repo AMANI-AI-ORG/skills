@@ -50,3 +50,12 @@ These are the authoritative, always-current docs. Fetch the relevant pages below
 - **Pin the latest version from the docs release notes.** Get the current version ONLY from this SDK's **ReleaseNote** page (listed above, e.g. `.../<sdk>/ReleaseNote`) — never GitHub Releases, jitpack or any external source. Entries are newest-first: the **latest version is the first/topmost entry directly under the "Release Notes" heading** (that entry's heading IS the version, e.g. `v1.41.2`). Replace any placeholder (`Tag`, `LATEST_RELEASE`, `+`, `latest`) with that version and pin it exactly. The page is server-rendered — if your fetch returns an empty / JavaScript-only shell, retry or use a browser-capable fetch; never guess. If this SDK has no ReleaseNote page, use the version in the setup pages and ask the user if it is a placeholder.
 - **Keep mobile security features on.** Honor the docs' SSL pinning / request signing / `sharedSecret`; never disable TLS or certificate validation.
 - **Protect captured data.** Don't log or persist KYC capture data (ID images, NFC chip data, selfies) beyond what the docs specify.
+
+## Selfie integration — ask which mode (Core SDK only)
+The Core SDK has you build the selfie step yourself, and Amani offers **three selfie modes**. When the user asks to add or implement the **selfie** step, do NOT pick one silently — **present all three options, explain the differences below, and ask which they want** — then integrate ONLY the chosen mode from its live doc page (find it in the **Live documentation** list above; the relevant pages are under "Selfie"):
+
+- **Manual Selfie** — the user frames and taps to capture. Simplest flow, full user control. (live-docs page labelled "Manual")
+- **Auto Selfie** — the SDK captures automatically when a valid, aligned face is detected (no tap). Smoother, hands-free UX. (live-docs page labelled "Auto")
+- **Pose Estimation Selfie** — active liveness: the user follows guided head poses/movements that the SDK validates (strongest anti-spoofing). (live-docs page labelled "Pose Estimation")
+
+Fetch the chosen mode's live page and confirm its exact setup, parameters and callbacks before integrating; implement only that one mode.

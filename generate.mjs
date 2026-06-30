@@ -14,7 +14,11 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
-const DOCS_DIR = path.join(REPO_ROOT, "documents");
+// Docs live in the Docusaurus repo. Default to a sibling `documents/`; set
+// AMANI_DOCS_DIR to point elsewhere when generating from the standalone skills repo.
+const DOCS_DIR = process.env.AMANI_DOCS_DIR
+  ? path.resolve(process.env.AMANI_DOCS_DIR)
+  : path.join(REPO_ROOT, "documents");
 const OUT_DIR = __dirname; // skills repo root
 const TEMPLATES = path.join(__dirname, "templates");
 const SITE = "https://documentation.amani.ai";
@@ -187,14 +191,16 @@ function metaBlock(meta) {
   return Object.entries(meta).map(([k, v]) => `    ${k}: ${JSON.stringify(v)}`).join("\n");
 }
 // Shared rules + OPTIONAL scoped additions. Drop a file in templates/rules/ named
-//   platform-<mobile|web|backend|android|ios|flutter|react-native>.md   or
+//   platform-<mobile|web|backend|android|ios|flutter|react-native>.md
 //   sdk-<kyc|video|biomatch|voice|web|api>.md
-// to append rules only for that scope (category, OS platform, or SDK). See CONTRIBUTING.md.
-function assembleRules(platform, sdk, target) {
+//   sdk-<sdk>-<variant>.md   (e.g. sdk-kyc-core.md — KYC Core leaves only)
+// to append rules only for that scope (category, OS platform, SDK, or SDK+variant). See CONTRIBUTING.md.
+function assembleRules(platform, sdk, target, variant) {
   const parts = [readTemplate("rules/common.md").trimEnd()];
   const files = [`rules/platform-${platform}.md`];
   if (target) files.push(`rules/platform-${target}.md`);
   files.push(`rules/sdk-${sdk}.md`);
+  if (variant) files.push(`rules/sdk-${sdk}-${variant}.md`);
   for (const f of files) {
     const p = path.join(TEMPLATES, f);
     if (fs.existsSync(p)) parts.push(fs.readFileSync(p, "utf8").trim());
@@ -228,7 +234,7 @@ function leafContent({ name, heading, blurb, sdk, variant, target, route, pages,
     HEADING: `Amani ${heading}${titleSuffix}`,
     BLURB: blurb,
     LIVE_DOCS: liveDocs,
-    RULES: assembleRules(plat, sdk, target),
+    RULES: assembleRules(plat, sdk, target, variant),
   });
 }
 

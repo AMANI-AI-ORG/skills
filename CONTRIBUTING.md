@@ -36,16 +36,18 @@ templates/
     common.md           shared rules (How to implement + Safety) injected into EVERY skill
     platform-mobile.md  scoped: version-from-ReleaseNote + SSL/capture rules (all mobile SDKs)
     sdk-api.md          scoped: REST API note (no version to pin)
-    platform-<x>.md / sdk-<x>.md   OPTIONAL — add more scoped files as needed (auto-appended to matching skills)
+    sdk-kyc-core.md     scoped: selfie-mode choice (Manual/Auto/Pose) — KYC Core leaves only
+    platform-<x>.md / sdk-<x>.md / sdk-<sdk>-<variant>.md   OPTIONAL — add more scoped files (auto-appended to matching skills)
 skills/                 GENERATED — flat <name>/SKILL.md (do NOT hand-edit)
 bin/install.mjs         installer used by npx / clone (copies skills into .claude/skills)
 package.json            npm / npx metadata
 README.md               end-user usage
 ```
 
-## Two repos
-- The **docs** (`documents/**`) and `generate.mjs` live in the Docusaurus documentation repo; `generate.mjs` must run there (it reads `../documents`).
-- This **skills repo** (`AMANI-AI-ORG/skills`) is the published output. After regenerating in the docs repo, sync the result here (`skills/`, `templates/`, `generate.mjs`, `bin/`, `package.json`, `README.md`, `CONTRIBUTING.md`), then commit/push.
+## Where the docs come from
+- The **docs** (`documents/**`) are the URL source of truth and live in the Docusaurus documentation repo.
+- `generate.mjs` reads them from a sibling `documents/` by default, or from **`$AMANI_DOCS_DIR`** when this skills repo is standalone (docs checked out in another repo). It embeds only the resulting live URLs — never doc content — so no docs are copied here.
+- This **skills repo** (`AMANI-AI-ORG/skills`) is the published output: `generate.mjs`, `templates/`, the generated `skills/`, `bin/`, `package.json`. Regenerate after the docs change, then commit/push.
 
 ## How to make changes
 
@@ -55,17 +57,21 @@ README.md               end-user usage
 | Change leaf or router wording/structure | `templates/leaf.md` / `router-kyc.md` / `router-platform.md` |
 | **Platform-specific rule** | add `templates/rules/platform-<x>.md` (live example: `platform-mobile.md` = version/SSL/capture rules for all mobile SDKs) |
 | **SDK-specific rule** | add `templates/rules/sdk-<x>.md` (live example: `sdk-api.md` = REST API note, no version to pin) |
+| **SDK + variant rule** | add `templates/rules/sdk-<sdk>-<variant>.md` (live example: `sdk-kyc-core.md` = selfie-mode choice for KYC **Core** leaves only) |
 | Add / rename an SDK or platform | edit the `MOBILE` / `BACKEND` / `WEB` taxonomy in `generate.mjs` |
 | Change the live docs domain | `SITE` in `generate.mjs` |
 | Change the GitHub org/repo | search-replace in `README.md` + `package.json` + `bin/install.mjs` |
 
-Then regenerate (run where `../documents` exists):
+Then regenerate (point at the docs if they aren't a sibling `documents/`):
 
 ```bash
-node skills/generate.mjs
+# docs as a sibling directory:
+node generate.mjs
+# or docs checked out in another repo:
+AMANI_DOCS_DIR="/path/to/Documentation/documents" node generate.mjs
 ```
 
-The rules for a skill = `common.md` **+** `platform-<platform>.md` (if present) **+** `sdk-<sdk>.md` (if present). So platform/SDK rules are opt-in: create the file only when needed; absent files are skipped.
+The rules for a skill = `common.md` **+** `platform-<category>.md` & `platform-<os>.md` (if present) **+** `sdk-<sdk>.md` (if present) **+** `sdk-<sdk>-<variant>.md` (if present). So scoped rules are opt-in: create the file only when needed; absent files are skipped.
 
 ## How live URLs are derived (important)
 `generate.mjs` mirrors Docusaurus routing so links resolve on the live site:
@@ -87,9 +93,9 @@ grep -rhoE "https://documentation\.amani\.ai/[^ )]+" skills | sort -u | while re
 ## Distribution
 - **npx:** `npx -y github:AMANI-AI-ORG/skills --global`
 - **git clone:** `git clone https://github.com/AMANI-AI-ORG/skills.git && node skills/bin/install.mjs --global`
+- **local (no push — testing a checkout):** from inside the repo `npx -y . --global` or `node bin/install.mjs --global` (or `npx -y /path/to/skills --global` from elsewhere). `npx` honors the package `bin` + `files`, so it installs the same set as a published package without committing/pushing.
 - **npm (optional):** `npm publish` ships `skills/ bin/ README.md` (see `package.json` `files`).
 
 ## Release / update flow
-1. Docs change → `node skills/generate.mjs` (in the docs repo).
-2. Sync the output to this skills repo.
-3. `git add -A && git commit && git push` (add `git tag vX.Y.Z && git push --tags` for pinned `#vX.Y.Z` installs).
+1. Docs change → regenerate: `node generate.mjs` (or with `AMANI_DOCS_DIR=…`).
+2. `git add -A && git commit && git push` (add `git tag vX.Y.Z && git push --tags` for pinned `#vX.Y.Z` installs).

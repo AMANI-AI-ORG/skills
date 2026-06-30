@@ -8,6 +8,9 @@
 //   npx -y github:AMANI-AI-ORG/skills --dir DIR  -> custom directory
 //   npx -y github:AMANI-AI-ORG/skills --list     -> list skills, install nothing
 //
+// Local checkout (no push — for testing): run from the repo with `npx -y . --global`
+// or directly `node bin/install.mjs --global` (or `npx -y /path/to/skills --global`).
+//
 // Pure Node, zero dependencies.
 
 import fs from "node:fs";
@@ -33,7 +36,9 @@ Usage:
   npx -y github:AMANI-AI-ORG/skills            Install into ./.claude/skills (current project)
   npx -y github:AMANI-AI-ORG/skills --global   Install into ~/.claude/skills (all projects)
   npx -y github:AMANI-AI-ORG/skills --dir DIR  Install into a custom skills directory
-  npx -y github:AMANI-AI-ORG/skills --list     List the available skills without installing`);
+  npx -y github:AMANI-AI-ORG/skills --list     List the available skills without installing
+
+Local checkout (no push): run from the repo with  npx -y . --global  or  node bin/install.mjs --global`);
   process.exit(0);
 }
 
