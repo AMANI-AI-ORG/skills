@@ -92,4 +92,4 @@ for (const s of skills) {
 }
 
 console.log(`Installed ${n} Amani skills into ${target}`);
-console.log(`Reload your agent, then try: "Integrate the Amani KYC SDK" — it will ask Core vs UI.`);
+console.log(`Reload your agent, then ask it to integrate an Amani SDK — name the SDK and platform (e.g. "Integrate the Amani KYC SDK on iOS"), and the matching skill guides the setup from the live docs.`);

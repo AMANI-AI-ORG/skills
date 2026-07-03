@@ -36,6 +36,7 @@ templates/
     common.md           shared rules (How to implement + Safety) injected into EVERY skill
     platform-mobile.md  scoped: version-from-ReleaseNote + SSL/capture rules (all mobile SDKs)
     sdk-api.md          scoped: REST API note (no version to pin)
+    sdk-kyc.md          scoped: API version (V1/V2) + security-level (sharedSecret/SSL) prompts — all KYC leaves
     sdk-kyc-core.md     scoped: selfie-mode choice (Manual/Auto/Pose) — KYC Core leaves only
     platform-ios.md / platform-flutter.md / platform-react-native.md   scoped: SPM-vs-CocoaPods install choice (SPM recommended) — iOS-involving leaves
     platform-<x>.md / sdk-<x>.md / sdk-<sdk>-<variant>.md   OPTIONAL — add more scoped files (auto-appended to matching skills)
