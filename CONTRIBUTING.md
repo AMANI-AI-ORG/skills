@@ -37,6 +37,7 @@ templates/
     platform-mobile.md  scoped: version-from-ReleaseNote + SSL/capture rules (all mobile SDKs)
     sdk-api.md          scoped: REST API note (no version to pin)
     sdk-kyc-core.md     scoped: selfie-mode choice (Manual/Auto/Pose) — KYC Core leaves only
+    platform-ios.md / platform-flutter.md / platform-react-native.md   scoped: SPM-vs-CocoaPods install choice (SPM recommended) — iOS-involving leaves
     platform-<x>.md / sdk-<x>.md / sdk-<sdk>-<variant>.md   OPTIONAL — add more scoped files (auto-appended to matching skills)
 skills/                 GENERATED — flat <name>/SKILL.md (do NOT hand-edit)
 bin/install.mjs         installer used by npx / clone (copies skills into .claude/skills)

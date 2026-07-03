@@ -51,6 +51,14 @@ These are the authoritative, always-current docs. Fetch the relevant pages below
 - **Keep mobile security features on.** Honor the docs' SSL pinning / request signing / `sharedSecret`; never disable TLS or certificate validation.
 - **Protect captured data.** Don't log or persist KYC capture data (ID images, NFC chip data, selfies) beyond what the docs specify.
 
+## Installation — ask SPM or CocoaPods first (SPM recommended)
+This is an **iOS** integration. Before giving any installation steps, make this the **first question**: ask the user **which package manager they want to install with — Swift Package Manager (SPM) or CocoaPods** — and present **SPM as the recommended default** (offer it first):
+
+- **Swift Package Manager (SPM)** — Apple's built-in dependency manager, no extra tooling. **Recommended.**
+- **CocoaPods** — the established Ruby-based manager (`Podfile` + `pod install`).
+
+Then follow **only** the chosen method, exactly as written on the SDK's live installation page. If the live docs document only one of the two, use that one and tell the user.
+
 ## Selfie integration — ask which mode (Core SDK only)
 The Core SDK has you build the selfie step yourself, and Amani offers **three selfie modes**. When the user asks to add or implement the **selfie** step, do NOT pick one silently — **present all three options, explain the differences below, and ask which they want** — then integrate ONLY the chosen mode from its live doc page (find it in the **Live documentation** list above; the relevant pages are under "Selfie"):
 

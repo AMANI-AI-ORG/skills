@@ -38,3 +38,11 @@ These are the authoritative, always-current docs. Fetch the relevant pages below
 - **Pin the latest version from the docs release notes.** Get the current version ONLY from this SDK's **ReleaseNote** page (listed above, e.g. `.../<sdk>/ReleaseNote`) — never GitHub Releases, jitpack or any external source. Entries are newest-first: the **latest version is the first/topmost entry directly under the "Release Notes" heading** (that entry's heading IS the version, e.g. `v1.41.2`). Replace any placeholder (`Tag`, `LATEST_RELEASE`, `+`, `latest`) with that version and pin it exactly. The page is server-rendered — if your fetch returns an empty / JavaScript-only shell, retry or use a browser-capable fetch; never guess. If this SDK has no ReleaseNote page, use the version in the setup pages and ask the user if it is a placeholder.
 - **Keep mobile security features on.** Honor the docs' SSL pinning / request signing / `sharedSecret`; never disable TLS or certificate validation.
 - **Protect captured data.** Don't log or persist KYC capture data (ID images, NFC chip data, selfies) beyond what the docs specify.
+
+## Installation — ask SPM or CocoaPods first (SPM recommended)
+This is an **iOS** integration. Before giving any installation steps, make this the **first question**: ask the user **which package manager they want to install with — Swift Package Manager (SPM) or CocoaPods** — and present **SPM as the recommended default** (offer it first):
+
+- **Swift Package Manager (SPM)** — Apple's built-in dependency manager, no extra tooling. **Recommended.**
+- **CocoaPods** — the established Ruby-based manager (`Podfile` + `pod install`).
+
+Then follow **only** the chosen method, exactly as written on the SDK's live installation page. If the live docs document only one of the two, use that one and tell the user.

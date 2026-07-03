@@ -1,0 +1,2 @@
+## iOS setup — ask SPM or CocoaPods first (SPM recommended)
+This SDK builds for both Android and iOS. When you reach the **iOS** setup, make this the **first question** for that step: ask the user **which package manager to use — Swift Package Manager (SPM) or CocoaPods** — and present **SPM as the recommended default** (offer it first). Then follow only the chosen method, exactly as written in the live iOS installation docs; if only one manager is documented, use that one and say so. (The Android build needs no such choice.)
